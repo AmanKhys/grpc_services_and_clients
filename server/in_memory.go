@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	tpb "google.golang.org/protobuf/types/known/timestamppb"
 	"time"
 	pb "todo_app/todo/v1"
@@ -23,4 +24,27 @@ func (d *inMemoryDb) addTask(description string, dueDate time.Time) (uint64, err
 	}
 	d.tasks = append(d.tasks, task)
 	return nextId, nil
+}
+
+func (d *inMemoryDb) getTasks(f func(any) error) error {
+	for _, task := range d.tasks {
+		if err := f(task); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (d *inMemoryDb) updateTask(id uint64, description string, dueDate time.Time, done bool) error {
+
+	for i, task := range d.tasks {
+		if task.Id == id {
+			t := d.tasks[i]
+			t.Description = description
+			t.DueDate = tpb.New(dueDate)
+			t.Done = done
+			return nil
+		}
+	}
+	return fmt.Errorf("task with id %d not found", id)
 }
