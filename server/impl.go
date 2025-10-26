@@ -2,7 +2,8 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"io"
 	"log"
@@ -12,7 +13,26 @@ import (
 )
 
 func (s *server) AddTask(_ context.Context, in *pb.AddTaskRequest) (*pb.AddTaskResponse, error) {
-	id, _ := s.d.addTask(in.Description, in.DueDate.AsTime())
+	if len(in.Description) == 0 {
+		return nil, status.Error(
+			codes.InvalidArgument,
+			"expected a task description, got an empty string",
+		)
+	}
+	if in.DueDate.AsTime().Before(time.Now().UTC()) {
+		return nil, status.Error(
+			codes.InvalidArgument,
+			"expected a task due_date that is in the future",
+		)
+	}
+	id, err := s.d.addTask(in.Description, in.DueDate.AsTime())
+	if err != nil {
+		return nil, status.Errorf(
+			codes.Internal,
+			"unexpected error: %s",
+			err.Error(),
+		)
+	}
 	return &pb.AddTaskResponse{Id: id}, nil
 }
 

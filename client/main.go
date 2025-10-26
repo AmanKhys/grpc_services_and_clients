@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 	tpb "google.golang.org/protobuf/types/known/timestamppb"
@@ -59,14 +61,14 @@ func main() {
 	case "update":
 		fmt.Println("...........UPDATE.........")
 		updateTasks(c, &pb.UpdateTasksRequest{
-			Id: 1, Description: "oombikko myre",
+			Id: 1, Description: "updated msg",
 			DueDate: tpb.New(time.Now().Add(3 * time.Hour)),
 			Done:    false,
 		}, &pb.UpdateTasksRequest{
-			Id: 2, Description: "oombikko myre 2 times",
+			Id: 2, Description: "second updated msg",
 			DueDate: tpb.New(time.Now().Add(1 * time.Hour)),
 		}, &pb.UpdateTasksRequest{
-			Id: 3, Description: "oombikko 3myre",
+			Id: 3, Description: "thrid updated msg",
 		})
 		fmt.Println("..........................")
 	case "delete":
@@ -76,6 +78,12 @@ func main() {
 			&pb.DeleteTasksRequest{Id: 2},
 			&pb.DeleteTasksRequest{Id: 3},
 		)
+		fmt.Println("..........................")
+	case "add_err":
+		fmt.Println("...........ERROR..........")
+		dueDate := time.Now().Add(-5 * time.Second)
+		id := addTask(c, "This is a task", dueDate)
+		fmt.Println("Added Task:", id)
 		fmt.Println("..........................")
 
 	}
@@ -89,7 +97,16 @@ func addTask(c pb.TodoServiceClient, description string, dueDate time.Time) uint
 	}
 	res, err := c.AddTask(context.Background(), req)
 	if err != nil {
-		panic(err)
+		if s, ok := status.FromError(err); ok {
+			switch s.Code() {
+			case codes.InvalidArgument, codes.Internal:
+				log.Fatalf("%s: %s", s.Code(), s.Message())
+			default:
+				log.Fatal(s)
+			}
+		} else {
+			panic(err)
+		}
 	}
 	return res.Id
 }
