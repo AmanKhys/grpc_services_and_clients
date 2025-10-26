@@ -70,6 +70,14 @@ func main() {
 			},
 		})
 		fmt.Println("..........................")
+	case "delete":
+		fmt.Println("...........DELETE.........")
+		deleteTasks(c,
+			&pb.DeleteTasksRequest{Id: 1},
+			&pb.DeleteTasksRequest{Id: 2},
+			&pb.DeleteTasksRequest{Id: 3},
+		)
+		fmt.Println("..........................")
 
 	}
 
@@ -126,4 +134,36 @@ func updateTasks(c pb.TodoServiceClient, reqs ...*pb.UpdateTasksRequest) {
 	if _, err = stream.CloseAndRecv(); err != nil {
 		log.Fatalf("unexpected error: %v", err)
 	}
+}
+
+func deleteTasks(c pb.TodoServiceClient, reqs ...*pb.DeleteTasksRequest) {
+	stream, err := c.DeleteTasks(context.Background())
+	if err != nil {
+		log.Fatalf("unexpected error: %v", err)
+	}
+	waitc := make(chan struct{})
+	go func() {
+		for {
+			res, err := stream.Recv()
+			if err == io.EOF {
+				close(waitc)
+				break
+			}
+			if err != nil {
+				log.Fatalf("error while receiving: %v\n", err)
+			}
+			log.Println("deleted task")
+			fmt.Println(res)
+		}
+	}()
+	for _, req := range reqs {
+		if err := stream.Send(req); err != nil {
+			return
+		}
+	}
+
+	if err := stream.CloseSend(); err != nil {
+		return
+	}
+	<-waitc
 }
