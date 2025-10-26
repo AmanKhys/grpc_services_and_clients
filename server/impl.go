@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -37,14 +38,30 @@ func (s *server) AddTask(_ context.Context, in *pb.AddTaskRequest) (*pb.AddTaskR
 }
 
 func (s *server) ListTasks(req *pb.ListTasksRequest, stream pb.TodoService_ListTasksServer) error {
+	ctx := stream.Context()
 	return s.d.getTasks(func(t any) error {
+		// check for cancel/deadline
+		select {
+		case <-ctx.Done():
+			switch ctx.Err() {
+			case context.Canceled:
+				log.Printf("request canceled: %s", ctx.Err())
+			case context.DeadlineExceeded:
+				log.Printf("request deadline exceeded: %s", ctx.Err())
+			default:
+				log.Printf("request cancelled %s", ctx.Err())
+			}
+			return ctx.Err()
+		case <-time.After(1 * time.Second):
+		}
 		task := t.(*pb.Task)
 
+		fmt.Printf(task.String())
 		// use the filter for field mask
 		helpers.Filter(task, req.Mask)
 
 		overdue := task.DueDate != nil && !task.Done &&
-			task.DueDate.AsTime().Before(time.Now())
+			task.DueDate.AsTime().Before(time.Now().UTC())
 		err := stream.Send(&pb.ListTasksResponse{
 			Task:    task,
 			Overdue: overdue,

@@ -52,7 +52,7 @@ func main() {
 		fmt.Println("..........................")
 	case "print":
 		fmt.Println("...........LIST...........")
-		fm, err := fieldmaskpb.New(&pb.Task{}, "id")
+		fm, err := fieldmaskpb.New(&pb.Task{}, "id", "description", "done")
 		if err != nil {
 			log.Fatalf("unexpected error: %v", err)
 		}
@@ -116,7 +116,9 @@ func printTasks(c pb.TodoServiceClient, fm *fieldmaskpb.FieldMask) {
 	req := &pb.ListTasksRequest{
 		Mask: fm,
 	}
-	stream, err := c.ListTasks(context.Background(), req)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Hour)
+	defer cancel()
+	stream, err := c.ListTasks(ctx, req)
 
 	if err != nil {
 		log.Fatalf("unexpected error: %v", err)
@@ -128,6 +130,15 @@ func printTasks(c pb.TodoServiceClient, fm *fieldmaskpb.FieldMask) {
 		}
 		if err != nil {
 			log.Fatalf("unexpted error: %v", err)
+		}
+
+		// random condition for cancel to happen from client side
+		// We could also use a break here to kick in the cancel
+		// from the defer statement
+		if res.Task.Id == 2 {
+			log.Printf("Cancel called")
+			cancel()
+			time.Sleep(time.Second)
 		}
 		fmt.Println(res.Task.String(), "overdue: ", res.Overdue)
 	}
