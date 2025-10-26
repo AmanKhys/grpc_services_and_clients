@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"google.golang.org/protobuf/proto"
 	"io"
 	"log"
 	"time"
 	pb "todo_app/proto/v2"
+	"todo_app/server/helpers"
 )
 
 func (s *server) AddTask(_ context.Context, in *pb.AddTaskRequest) (*pb.AddTaskResponse, error) {
@@ -17,6 +19,10 @@ func (s *server) AddTask(_ context.Context, in *pb.AddTaskRequest) (*pb.AddTaskR
 func (s *server) ListTasks(req *pb.ListTasksRequest, stream pb.TodoService_ListTasksServer) error {
 	return s.d.getTasks(func(t any) error {
 		task := t.(*pb.Task)
+
+		// use the filter for field mask
+		helpers.Filter(task, req.Mask)
+
 		overdue := task.DueDate != nil && !task.Done &&
 			task.DueDate.AsTime().Before(time.Now())
 		err := stream.Send(&pb.ListTasksResponse{

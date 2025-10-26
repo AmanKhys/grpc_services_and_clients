@@ -1,12 +1,14 @@
-package main
+package helpers
 
 import (
-	"fmt"
+	// "fmt"
 	"golang.org/x/exp/constraints"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/types/known/wrapperspb"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
+	// "google.golang.org/protobuf/types/known/wrapperspb"
 	"log"
+	"slices"
 	"unsafe"
 )
 
@@ -15,7 +17,7 @@ import (
 // It returns two values. The number of bytes for data in memory
 // and the number of bytes after serialization of wrapper - 1
 // (removes the byte for tag + wire type).
-func serializedSize[D constraints.Integer, W protoreflect.ProtoMessage](data D, wrapper W) (uintptr, int) {
+func SerializedSize[D constraints.Integer, W protoreflect.ProtoMessage](data D, wrapper W) (uintptr, int) {
 	out, err := proto.Marshal(wrapper)
 	if err != nil {
 		log.Fatal(err)
@@ -23,6 +25,15 @@ func serializedSize[D constraints.Integer, W protoreflect.ProtoMessage](data D, 
 	return unsafe.Sizeof(data), len(out) - 1
 }
 
-func main() {
-	t := &pb.Tags{}
+func Filter(msg proto.Message, mask *fieldmaskpb.FieldMask) {
+	if mask == nil || len(mask.Paths) == 0 {
+		return
+	}
+	rft := msg.ProtoReflect()
+	rft.Range(func(fd protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+		if !slices.Contains(mask.Paths, string(fd.Name())) {
+			rft.Clear(fd)
+		}
+		return true
+	})
 }

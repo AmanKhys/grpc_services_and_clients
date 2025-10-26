@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package proto.v2;
 
+import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "proto/v2";
@@ -22,7 +23,9 @@ message AddTaskResponse {
   uint64 id = 1;
 }
 
-message ListTasksRequest {}
+message ListTasksRequest {
+  google.protobuf.FieldMask mask = 1;
+}
 
 message ListTasksResponse {
   Task task = 1;
