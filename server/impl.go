@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"google.golang.org/protobuf/proto"
 	"io"
+	"log"
 	"time"
-	pb "todo_app/todo/v1"
+	pb "todo_app/proto/v2"
 )
 
 func (s *server) AddTask(_ context.Context, in *pb.AddTaskRequest) (*pb.AddTaskResponse, error) {
@@ -26,19 +28,25 @@ func (s *server) ListTasks(req *pb.ListTasksRequest, stream pb.TodoService_ListT
 }
 
 func (s *server) UpdateTasks(stream pb.TodoService_UpdateTasksServer) error {
+	totalLength := 0
 	for {
 		req, err := stream.Recv()
 		if err == io.EOF {
+			log.Println("Total: ", totalLength)
 			return stream.SendAndClose(&pb.UpdateTasksResponse{})
 		}
 		if err != nil {
 			return err
 		}
+		// to get the length of the data that is  transported
+		// in the protobuf format
+		out, _ := proto.Marshal(req)
+		totalLength += len(out)
 		s.d.updateTask(
-			req.Task.Id,
-			req.Task.Description,
-			req.Task.DueDate.AsTime(),
-			req.Task.Done,
+			req.Id,
+			req.Description,
+			req.DueDate.AsTime(),
+			req.Done,
 		)
 	}
 }

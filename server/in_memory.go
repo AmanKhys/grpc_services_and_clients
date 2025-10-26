@@ -4,7 +4,7 @@ import (
 	"fmt"
 	tpb "google.golang.org/protobuf/types/known/timestamppb"
 	"time"
-	pb "todo_app/todo/v1"
+	pb "todo_app/proto/v2"
 )
 
 type inMemoryDb struct {

@@ -3,7 +3,7 @@ package main
 import (
 	// "database/sql"
 	"time"
-	pb "todo_app/todo/v1"
+	pb "todo_app/proto/v2"
 )
 
 type server struct {

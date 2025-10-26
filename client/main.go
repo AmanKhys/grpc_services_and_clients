@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	tpb "google.golang.org/protobuf/types/known/timestamppb"
-	pb "todo_app/todo/v1"
+	pb "todo_app/proto/v2"
 )
 
 func main() {
@@ -54,20 +54,14 @@ func main() {
 	case "update":
 		fmt.Println("...........UPDATE.........")
 		updateTasks(c, &pb.UpdateTasksRequest{
-			Task: &pb.Task{
-				Id: 1, Description: "oombikko myre",
-				DueDate: tpb.New(time.Now().Add(3 * time.Hour)),
-				Done:    false,
-			},
+			Id: 1, Description: "oombikko myre",
+			DueDate: tpb.New(time.Now().Add(3 * time.Hour)),
+			Done:    false,
 		}, &pb.UpdateTasksRequest{
-			Task: &pb.Task{
-				Id: 2, Description: "oombikko myre 2 times",
-				DueDate: tpb.New(time.Now().Add(1 * time.Hour)),
-			},
+			Id: 2, Description: "oombikko myre 2 times",
+			DueDate: tpb.New(time.Now().Add(1 * time.Hour)),
 		}, &pb.UpdateTasksRequest{
-			Task: &pb.Task{
-				Id: 3, Description: "oombikko 3myre",
-			},
+			Id: 3, Description: "oombikko 3myre",
 		})
 		fmt.Println("..........................")
 	case "delete":
@@ -127,8 +121,8 @@ func updateTasks(c pb.TodoServiceClient, reqs ...*pb.UpdateTasksRequest) {
 		if err != nil {
 			log.Fatalf("unexpected error: %v", err)
 		}
-		if req.Task != nil {
-			fmt.Printf("updated task with id: %d\n", req.Task.Id)
+		if req != nil {
+			fmt.Printf("updated task with id: %d\n", req.Id)
 		}
 	}
 	if _, err = stream.CloseAndRecv(); err != nil {

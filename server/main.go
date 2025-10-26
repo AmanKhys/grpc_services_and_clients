@@ -1,7 +1,7 @@
 package main
 
 import (
-	pb "todo_app/todo/v1"
+	pb "todo_app/proto/v2"
 
 	"google.golang.org/grpc"
 	"log"
